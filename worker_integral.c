@@ -41,7 +41,12 @@ double numerical_integrate(double a, double b, int num_steps) {
             return -1; 
         }
       */
-        double y = x * x;
+        if ( a < 0 ) {
+            fprintf(stderr, "[Worker] Critical error: division by zero\n");
+            printf("[Worker] Critical error: division by zero\n");
+            return -1;
+        }
+        double y = x*x;
         sum += y * h;
     }
     return sum;
