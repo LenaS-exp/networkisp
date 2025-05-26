@@ -32,8 +32,16 @@ double numerical_integrate(double a, double b, int num_steps) {
     
     for (int i = 0; i < num_steps; i++) {
         double x = a + (i + 0.5) * h;
-        //double y = x*x + x*x*x*x*x*0.0001 + x*(x+100)*(x+1000)*(x/80)*(x/78*x*x*0.1111)/((x+1)*(x+1)*(x+1)) + 120121 -1000;
-        double y = x * x; // Интегрируем x^2
+      /*  
+      // Имитация ошибки
+        srand(time(NULL));
+        int random_num = rand();
+        if (random_num%2 == 1) { 
+            fprintf(stderr, "[Worker] Critical error: division by zero\n");
+            return -1; 
+        }
+      */
+        double y = x * x;
         sum += y * h;
     }
     return sum;
@@ -49,9 +57,14 @@ void* compute_task(void* arg) {
         return NULL;
     }
     double result = numerical_integrate(a, b, NUM_STEPS / worker_config.max_cores);
-    char response[128];
-    snprintf(response, sizeof(response), "RESULT %s %.6f\n", task->task_id, result);
-    send(task->client_fd, response, strlen(response), 0);
+    
+    if (result == -1) {  // Обнаружена критическая ошибка
+        send(task->client_fd, "ERROR\n", 6, 0);
+    } else {
+        char response[128];
+        snprintf(response, sizeof(response), "RESULT %s %.6f\n", task->task_id, result);
+        send(task->client_fd, response, strlen(response), 0);
+    }
 
     free(task);
     pthread_mutex_lock(&worker_config.lock);
@@ -168,6 +181,8 @@ int main(int argc, char** argv) {
 
 
     int client_fd = connect_to_master(argv[1], atoi(argv[2]));
+
+
     printf("Connected to master at %s:%d (max_cores=%d)\n", 
            argv[1], atoi(argv[2]), atoi(argv[3]));
     

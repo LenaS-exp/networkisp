@@ -79,9 +79,13 @@ int check_master_timeout() {
 void send_shutdown_to_all() {
     printf("[Master] Sending shutdown to all workers\n");
     for (int i = 0; i < master.num_workers; i++) {
-        send(master.workers[i].fd, "SHUTDOWN\n", 9, 0);
+        if (master.workers[i].fd) {
+            send(master.workers[i].fd, "SHUTDOWN\n", 9, 0);
         close(master.workers[i].fd);
+        }
+        
     }
+    printf("[Master] End of sending shutdown to all workers\n");
 }
 
 void handle_result(int worker_idx, const char* result_str) {
@@ -254,7 +258,18 @@ void run_master(int port, double a, double b) {
             task_number++;
         }
     }
-
+    /*
+    // Имитация ошибки
+    srand(time(NULL));
+    int random_num = rand();
+    if (random_num%2 == 1) {
+            printf("[Master] Master PSEUDOtimeout reached!\n");
+            master.err = 1;
+            fflush(stdout);
+            close(listen_fd);
+            return; 
+    }
+    */
     // Собираем результаты
     while (master.tasks_completed < master.cores_total) {
         if (check_master_timeout()) {
@@ -292,9 +307,18 @@ void run_master(int port, double a, double b) {
                             handle_result(i - 1, result_str);
                         }
                     }
+                    if (strcmp(buffer, "ERROR") == 0) {
+                         printf("[Master] Critical error detected in worker %d. Shutting down all workers...\n", i-1);
+                            master.err = 1;
+                            send_shutdown_to_all();
+                            fflush(stdout);
+                            close(listen_fd);
+                            return;
+                    }
                 }
                 
             }
+                
         }
     }
    if (!master.err) {
