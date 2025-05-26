@@ -42,7 +42,7 @@ for i in $(seq 1 4); do
 done
 sleep $TIMEOUT
 
-echo "=== Test 2: Normal execution ==="
+echo "=== Test 2.1: Normal execution ==="
 xterm -hold -e "$BIN_DIR/master_integral $PORT 4 $TIMEOUT 0 1" &
 sleep 1
 for i in $(seq 1 4); do

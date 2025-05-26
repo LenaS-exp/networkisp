@@ -19,8 +19,8 @@ typedef struct {
     int max_cores;
     char task_id[32];
     time_t task_start_time;
-    double partial_result;  // Для хранения частичного результата
-    int result_received;   // Флаг получения результата
+    double partial_result;
+    int result_received;   
 } Worker;
 
 typedef struct {
@@ -30,8 +30,8 @@ typedef struct {
     int max_workers;
     int max_timeout;
     struct pollfd fds[MAX_WORKERS + 1];
-    double total_result;   // Суммарный результат
-    int tasks_completed;   // Число завершенных задач
+    double total_result;   
+    int tasks_completed;   
     time_t start_time;
     int err;
 } MasterNode;
@@ -139,7 +139,6 @@ void run_master(int port, double a, double b) {
 
     printf("[Master] Started on port %d. Waiting for %d workers...\n", port, master.max_workers);
 
-    // Ждем подключения всех рабочих узлов
     while (master.num_workers < master.max_workers) {
         if (check_master_timeout()) {
             printf("[Master] Master timeout reached!\n");
@@ -171,7 +170,6 @@ void run_master(int port, double a, double b) {
         }
     }
 
-    // Запрос конфигураций
     for (int i = 0; (i < master.max_workers); i++) {
         if (check_master_timeout()) {
             printf("[Master] Master timeout reached!\n");
@@ -228,8 +226,6 @@ void run_master(int port, double a, double b) {
         }
     }
 
-
-    // Раздаем задачи
     clock_gettime(CLOCK_MONOTONIC, &program_start);
 
     double step = (b - a) / master.cores_total;    
@@ -250,7 +246,6 @@ void run_master(int port, double a, double b) {
             
             char task_id[32];
             snprintf(task_id, sizeof(task_id), "task%d", task_number);
-            //printf("DEBUG: start = %f; end = %f\n", start, end);
             send_task(i, task_id, task_data);
             
             start += step;
@@ -258,19 +253,7 @@ void run_master(int port, double a, double b) {
             task_number++;
         }
     }
-    /*
-    // Имитация ошибки
-    srand(time(NULL));
-    int random_num = rand();
-    if (random_num%2 == 1) {
-            printf("[Master] Master PSEUDOtimeout reached!\n");
-            master.err = 1;
-            fflush(stdout);
-            close(listen_fd);
-            return; 
-    }
-    */
-    // Собираем результаты
+
     while (master.tasks_completed < master.cores_total) {
         if (check_master_timeout()) {
             printf("[Master] Master timeout reached!\n");

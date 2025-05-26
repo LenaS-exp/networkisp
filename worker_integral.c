@@ -32,15 +32,6 @@ double numerical_integrate(double a, double b, int num_steps) {
     
     for (int i = 0; i < num_steps; i++) {
         double x = a + (i + 0.5) * h;
-      /*  
-      // Имитация ошибки
-        srand(time(NULL));
-        int random_num = rand();
-        if (random_num%2 == 1) { 
-            fprintf(stderr, "[Worker] Critical error: division by zero\n");
-            return -1; 
-        }
-      */
         if ( a < 0 ) {
             fprintf(stderr, "[Worker] Critical error: division by zero\n");
             printf("[Worker] Critical error: division by zero\n");
@@ -63,7 +54,7 @@ void* compute_task(void* arg) {
     }
     double result = numerical_integrate(a, b, NUM_STEPS / worker_config.max_cores);
     
-    if (result == -1) {  // Обнаружена критическая ошибка
+    if (result == -1) { 
         send(task->client_fd, "ERROR\n", 6, 0);
     } else {
         char response[128];
@@ -114,7 +105,6 @@ void handle_client(int client_fd) {
             close(client_fd);
             return;
         }
-        //printf("len=%d buf=<%.*s>\n", len, len, buffer);
         buffer[len] = '\0';
         for (char* msg = strtok(buffer, " \n");msg != NULL; msg = strtok(NULL, " \n")) {
             if (strcmp(msg, "CONFIG") == 0) {
@@ -161,9 +151,7 @@ void handle_client(int client_fd) {
                 break;
             }
         }
-        
-
-        // Проверка, жив ли master (если соединение разорвано)
+    
         char tmp;
         if (recv(client_fd, &tmp, 1, MSG_PEEK | MSG_DONTWAIT) == 0) {
             printf("[Worker] Master disconnected. Exiting.\n");
